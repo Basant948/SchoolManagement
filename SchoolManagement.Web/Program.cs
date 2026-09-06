@@ -1,30 +1,17 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
+using SchoolManagement.Infrastructure;
 using SchoolManagement.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("NeonDb")
-        ?? throw new InvalidOperationException("Connection string 'NeonDb' not found.")
-    )
-);
-
-// Add Identity services
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Apply migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -33,8 +20,12 @@ using (var scope = app.Services.CreateScope())
 
 app.UseSwagger();
 app.UseSwaggerUI();
+
 app.UseHttpsRedirection();
-app.UseAuthentication(); // Add this
+
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();
