@@ -1,6 +1,6 @@
-﻿namespace SchoolManagement.Application.DTOs.Identity
+﻿namespace SchoolManagement.Application.DTOs.Users
 {
-    public class CreateIdentityUserDto
+    public class CreateUserRequestDto
     {
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
