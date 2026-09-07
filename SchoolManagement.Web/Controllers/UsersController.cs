@@ -21,6 +21,15 @@ namespace SchoolManagement.Web.Controllers
             _identityService = identityService;
         }
 
+        [HttpGet("roles")]
+        public IActionResult GetAssignableRoles()
+        {
+            return Ok(new
+            {
+                all = AppRoles.All
+            });
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateUser(CreateUserRequestDto request)
         {
@@ -32,9 +41,9 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { message = "Either an email or a phone number is required." });
             }
 
-            if (!AppRoles.Assignable.Contains(request.Role))
+            if (!AppRoles.All.Contains(request.Role))
             {
-                return BadRequest(new { message = $"Role must be one of: {string.Join(", ", AppRoles.Assignable)}." });
+                return BadRequest(new { message = $"Role must be one of: {string.Join(", ", AppRoles.All)}." });
             }
 
             var identifier = hasEmail ? request.Email! : request.PhoneNumber!;

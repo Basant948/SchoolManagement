@@ -18,6 +18,9 @@ namespace SchoolManagement.Application.Interfaces.Services
         Task<List<UserInfoDto>> GetUsersByIdsAsync(IEnumerable<string> userIds);
 
         Task<(bool Succeeded, bool IsLockedOut, IEnumerable<string> Errors)> SignInAsync(string identifier, string password, bool rememberMe);
-        Task SignOutAsync();
+        Task<(bool Succeeded, IEnumerable<string> Errors)> UpdateProfileAsync(string userId, string firstName, string lastName, string? phoneNumber);
+        Task<(bool Succeeded, IEnumerable<string> Errors)> ChangePasswordAsync(string userId, string currentPassword, string newPassword);
+        Task<(bool Succeeded, string? Message)> ForgotPasswordAsync(string email);
+        Task<(bool Succeeded, IEnumerable<string> Errors)> ResetPasswordAsync(string email, string token, string newPassword);
     }
 }

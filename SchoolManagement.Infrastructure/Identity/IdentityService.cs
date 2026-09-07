@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using SchoolManagement.Application.DTOs.Identity;
+using SchoolManagement.Application.Interfaces.Services;
+using SchoolManagement.Application.Interfaces.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using SchoolManagement.Application.DTOs.Identity;
-using SchoolManagement.Application.Interfaces.Services;
 
 namespace SchoolManagement.Infrastructure.Identity
 {
@@ -13,15 +14,18 @@ namespace SchoolManagement.Infrastructure.Identity
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IEmailService _emailService;
 
         public IdentityService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
+            _emailService = emailService;
         }
 
         public async Task<bool> IdentifierExistsAsync(string identifier)
@@ -162,9 +166,76 @@ namespace SchoolManagement.Infrastructure.Identity
             return (false, false, new[] { "Invalid credentials." });
         }
 
-        public Task SignOutAsync()
+        public async Task<(bool Succeeded, IEnumerable<string> Errors)> UpdateProfileAsync(
+               string userId, string firstName, string lastName, string? phoneNumber)
         {
-            return Task.CompletedTask;
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return (false, new[] { "User not found." });
+            }
+
+            user.FirstName = firstName;
+            user.LastName = lastName;
+            user.PhoneNumber = phoneNumber;
+
+            var result = await _userManager.UpdateAsync(user);
+            return (result.Succeeded, result.Errors.Select(e => e.Description));
+        }
+
+        public async Task<(bool Succeeded, IEnumerable<string> Errors)> ChangePasswordAsync(
+            string userId, string currentPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return (false, new[] { "User not found." });
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            return (result.Succeeded, result.Errors.Select(e => e.Description));
+        }
+        public async Task<(bool Succeeded, string? Message)> ForgotPasswordAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // Always return success message (security best practice)
+            if (user == null || string.IsNullOrWhiteSpace(user.Email))
+            {
+                return (true, "If an account with that email exists, a password reset link has been sent.");
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            // You can change this URL to your frontend reset page
+            var resetLink = $"https://example.com/reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+
+            var subject = "Reset Your Password - School Management";
+            var body = $@"
+        <h2>Password Reset Request</h2>
+        <p>Hello {user.FirstName},</p>
+        <p>You requested to reset your password. Click the link below:</p>
+        <p><a href=""{resetLink}"">Reset Password</a></p>
+        <p>If you didn't request this, you can safely ignore this email.</p>
+        <p>This link will expire in a short time.</p>
+    ";
+
+            await _emailService.SendEmailAsync(user.Email, subject, body);
+
+            return (true, "If an account with that email exists, a password reset link has been sent.");
+        }
+
+        public async Task<(bool Succeeded, IEnumerable<string> Errors)> ResetPasswordAsync(
+            string email, string token, string newPassword)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return (false, new[] { "Invalid request." });
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+            return (result.Succeeded, result.Errors.Select(e => e.Description));
         }
 
         private async Task<UserInfoDto> MapToUserInfoAsync(ApplicationUser user)

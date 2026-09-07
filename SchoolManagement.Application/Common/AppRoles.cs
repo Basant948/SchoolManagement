@@ -8,6 +8,5 @@
         public const string Accountant = "Accountant";
 
         public static readonly string[] All = { Admin, Teacher, Parent, Accountant };
-        public static readonly string[] Assignable = { Teacher, Parent, Accountant };
     }
 }

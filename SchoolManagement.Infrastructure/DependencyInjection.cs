@@ -7,8 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using SchoolManagement.Application.Interfaces.Services;
+using SchoolManagement.Application.Interfaces.Utilities;
 using SchoolManagement.Infrastructure.Data;
 using SchoolManagement.Infrastructure.Identity;
+using SchoolManagement.Infrastructure.Services;
 
 namespace SchoolManagement.Infrastructure
 {
@@ -39,6 +41,8 @@ namespace SchoolManagement.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
 
             services.AddJwtAuthentication(configuration);
+
+            services.AddScoped<IEmailService, SmtpEmailService>();
 
             return services;
         }
