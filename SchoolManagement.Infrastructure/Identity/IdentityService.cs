@@ -72,6 +72,32 @@ namespace SchoolManagement.Infrastructure.Identity
                 await _userManager.AddToRoleAsync(user, dto.Role);
             }
 
+            if (hasEmail)
+            {
+                try
+                {
+                    var subject = "Welcome to School Management System";
+                    var body = $@"
+                <h2>Welcome, {dto.FirstName}!</h2>
+                <p>Your account has been created successfully.</p>
+                <p><strong>Login Details:</strong></p>
+                <ul>
+                    <li><strong>Email / Username:</strong> {dto.Email}</li>
+                    <li><strong>Password:</strong> {dto.Password}</li>
+                    <li><strong>Role:</strong> {dto.Role}</li>
+                </ul>
+                <p>Please login and change your password as soon as possible.</p>
+                <p>Thank you!</p>
+                    ";
+
+                    await _emailService.SendEmailAsync(dto.Email!, subject, body);
+                }
+                catch
+                {
+
+                }
+            }
+
             return (true, user.Id, Array.Empty<string>());
         }
 
@@ -199,7 +225,6 @@ namespace SchoolManagement.Infrastructure.Identity
         {
             var user = await _userManager.FindByEmailAsync(email);
 
-            // Always return success message (security best practice)
             if (user == null || string.IsNullOrWhiteSpace(user.Email))
             {
                 return (true, "If an account with that email exists, a password reset link has been sent.");
@@ -212,13 +237,13 @@ namespace SchoolManagement.Infrastructure.Identity
 
             var subject = "Reset Your Password - School Management";
             var body = $@"
-        <h2>Password Reset Request</h2>
-        <p>Hello {user.FirstName},</p>
-        <p>You requested to reset your password. Click the link below:</p>
-        <p><a href=""{resetLink}"">Reset Password</a></p>
-        <p>If you didn't request this, you can safely ignore this email.</p>
-        <p>This link will expire in a short time.</p>
-    ";
+                    <h2>Password Reset Request</h2>
+                    <p>Hello {user.FirstName},</p>
+                    <p>You requested to reset your password. Click the link below:</p>
+                    <p><a href=""{resetLink}"">Reset Password</a></p>
+                    <p>If you didn't request this, you can safely ignore this email.</p>
+                    <p>This link will expire in a short time.</p>
+                ";
 
             await _emailService.SendEmailAsync(user.Email, subject, body);
 
