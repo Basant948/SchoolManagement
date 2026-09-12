@@ -60,7 +60,8 @@ namespace SchoolManagement.Infrastructure.Data
                 Email = AdminEmail,
                 EmailConfirmed = true,
                 FirstName = AdminFirstName,
-                LastName = AdminLastName
+                LastName = AdminLastName,
+                IsActive = true
             };
 
             var createResult = await userManager.CreateAsync(admin, AdminPassword);

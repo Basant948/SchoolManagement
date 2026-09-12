@@ -7,6 +7,6 @@ namespace SchoolManagement.Application.Interfaces.Services
 {
     public interface ITokenService
     {
-        (string Token, DateTime ExpiresAtUtc) GenerateToken(UserInfoDto user);
+        (string Token, DateTime ExpiresAtUtc) GenerateToken(UserInfoDto user, bool rememberMe = false);
     }
 }
