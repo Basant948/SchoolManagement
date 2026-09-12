@@ -12,19 +12,27 @@ namespace SchoolManagement.Web.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IIdentityService _identityService;
+        private readonly IAuthenticationService _authenticationService;
+        private readonly IUserService _userService;
+        private readonly IPasswordService _passwordService;
         private readonly ITokenService _tokenService;
 
-        public AuthController(IIdentityService identityService, ITokenService tokenService)
+        public AuthController(
+            IAuthenticationService authenticationService,
+            IUserService userService,
+            IPasswordService passwordService,
+            ITokenService tokenService)
         {
-            _identityService = identityService;
+            _authenticationService = authenticationService;
+            _userService = userService;
+            _passwordService = passwordService;
             _tokenService = tokenService;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDto request)
         {
-            var (succeeded, isLockedOut, errors) = await _identityService.SignInAsync(
+            var (succeeded, isLockedOut, errors) = await _authenticationService.SignInAsync(
                 request.Identifier, request.Password, request.RememberMe);
 
             if (isLockedOut)
@@ -37,8 +45,9 @@ namespace SchoolManagement.Web.Controllers
                 return Unauthorized(new { errors });
             }
 
-            var user = await _identityService.GetUserByIdentifierAsync(request.Identifier);
-            var (token, expiresAtUtc) = _tokenService.GenerateToken(user!);
+            var user = await _userService.GetUserByIdentifierAsync(request.Identifier);
+
+            var (token, expiresAtUtc) = _tokenService.GenerateToken(user!, request.RememberMe);
 
             return Ok(new AuthResponseDto
             {
@@ -55,7 +64,7 @@ namespace SchoolManagement.Web.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null) return Unauthorized();
 
-            var user = await _identityService.GetUserByIdAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId);
             return user == null ? NotFound() : Ok(user);
         }
 
@@ -71,7 +80,7 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { message = "First name and last name are required." });
             }
 
-            var (succeeded, errors) = await _identityService.UpdateProfileAsync(
+            var (succeeded, errors) = await _userService.UpdateProfileAsync(
                 userId, request.FirstName, request.LastName, request.PhoneNumber);
 
             if (!succeeded)
@@ -79,7 +88,7 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { errors });
             }
 
-            var user = await _identityService.GetUserByIdAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId);
             return Ok(user);
         }
 
@@ -95,7 +104,7 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { message = "Current password and new password are required." });
             }
 
-            var (succeeded, errors) = await _identityService.ChangePasswordAsync(
+            var (succeeded, errors) = await _passwordService.ChangePasswordAsync(
                 userId, request.CurrentPassword, request.NewPassword);
 
             if (!succeeded)
@@ -114,7 +123,7 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { message = "Email is required." });
             }
 
-            var (succeeded, message) = await _identityService.ForgotPasswordAsync(request.Email);
+            var (succeeded, message) = await _passwordService.ForgotPasswordAsync(request.Email);
             return Ok(new { message });
         }
 
@@ -128,7 +137,7 @@ namespace SchoolManagement.Web.Controllers
                 return BadRequest(new { message = "Email, token and new password are required." });
             }
 
-            var (succeeded, errors) = await _identityService.ResetPasswordAsync(
+            var (succeeded, errors) = await _passwordService.ResetPasswordAsync(
                 request.Email, request.Token, request.NewPassword);
 
             if (!succeeded)

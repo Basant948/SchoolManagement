@@ -20,14 +20,20 @@ namespace SchoolManagement.Infrastructure.Identity
             _configuration = configuration;
         }
 
-        public (string Token, DateTime ExpiresAtUtc) GenerateToken(UserInfoDto user)
+        public (string Token, DateTime ExpiresAtUtc) GenerateToken(UserInfoDto user, bool rememberMe = false)
         {
             var jwtSection = _configuration.GetSection("Jwt");
             var key = jwtSection["Key"]
                 ?? throw new InvalidOperationException("Jwt:Key is not configured in appsettings.");
             var issuer = jwtSection["Issuer"];
             var audience = jwtSection["Audience"];
+
             var expiryMinutes = int.TryParse(jwtSection["ExpiryMinutes"], out var minutes) ? minutes : 60;
+            var rememberMeExpiryMinutes = int.TryParse(jwtSection["RememberMeExpiryMinutes"], out var rmMinutes)
+                ? rmMinutes
+                : 60 * 24 * 7; 
+
+            var effectiveExpiryMinutes = rememberMe ? rememberMeExpiryMinutes : expiryMinutes;
 
             var claims = new List<Claim>
             {
@@ -51,7 +57,7 @@ namespace SchoolManagement.Infrastructure.Identity
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
             var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-            var expiresAtUtc = DateTime.UtcNow.AddMinutes(expiryMinutes);
+            var expiresAtUtc = DateTime.UtcNow.AddMinutes(effectiveExpiryMinutes);
 
             var token = new JwtSecurityToken(
                 issuer: issuer,
